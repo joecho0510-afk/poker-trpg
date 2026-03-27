@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   addDoc,
   collection,
@@ -276,6 +276,8 @@ export default function PokerRoom({
   const [game, setGame] = useState<GameState>(null);
   const [raiseInput, setRaiseInput] = useState(20);
 
+  const chatScrollRef = useRef<HTMLDivElement | null>(null);
+
   const playerId = useMemo(() => {
     if (typeof window === "undefined") return "";
     return getPlayerId();
@@ -339,6 +341,11 @@ export default function PokerRoom({
 
     return () => unsub();
   }, [roomId]);
+
+  useEffect(() => {
+    if (!chatScrollRef.current) return;
+    chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+  }, [messages]);
 
   const sendMessage = async () => {
     const text = chatInput.trim();
@@ -612,12 +619,13 @@ export default function PokerRoom({
     <main
       style={{
         minHeight: "100vh",
-        background: "#0f172a",
+        background:
+          "radial-gradient(circle at top, #1e3a2f 0%, #0f172a 45%, #0b1120 100%)",
         color: "white",
         padding: 24,
       }}
     >
-      <div style={{ maxWidth: 1280, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1320, margin: "0 auto" }}>
         <div
           style={{
             display: "flex",
@@ -629,11 +637,13 @@ export default function PokerRoom({
           }}
         >
           <div>
-            <h1 style={{ margin: 0, fontSize: 32 }}>Seven Poker Room</h1>
-            <p style={{ marginTop: 8, color: "#94a3b8" }}>roomId: {roomId}</p>
+            <h1 style={{ margin: 0, fontSize: 34, fontWeight: 800 }}>
+              Seven Poker Room
+            </h1>
+            <p style={{ marginTop: 8, color: "#cbd5e1" }}>roomId: {roomId}</p>
           </div>
 
-          <div style={{ display: "flex", gap: 10 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button onClick={startGame} style={buttonStyle("white", "black")}>
               새 게임 시작
             </button>
@@ -657,35 +667,30 @@ export default function PokerRoom({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1.15fr 0.85fr",
+            gridTemplateColumns: "1.18fr 0.82fr",
             gap: 20,
+            alignItems: "stretch",
           }}
         >
           <section
             style={{
-              background: "#1e293b",
-              border: "1px solid #334155",
-              borderRadius: 20,
+              background: "rgba(15, 23, 42, 0.88)",
+              border: "1px solid rgba(148, 163, 184, 0.18)",
+              borderRadius: 24,
               padding: 20,
+              boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
             }}
           >
-            <h2 style={{ marginTop: 0 }}>플레이어</h2>
+            <h2 style={{ marginTop: 0, marginBottom: 16 }}>플레이어</h2>
 
             <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", marginBottom: 8 }}>내 이름</label>
+              <label style={{ display: "block", marginBottom: 8, color: "#cbd5e1" }}>
+                내 이름
+              </label>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                style={{
-                  width: "100%",
-                  height: 42,
-                  borderRadius: 12,
-                  border: "1px solid #475569",
-                  background: "#0f172a",
-                  color: "white",
-                  padding: "0 12px",
-                  boxSizing: "border-box",
-                }}
+                style={inputStyle}
               />
             </div>
 
@@ -699,17 +704,17 @@ export default function PokerRoom({
                   <div
                     key={player.id}
                     style={{
-                      background: "#0f172a",
+                      background: "rgba(15, 23, 42, 0.9)",
                       border: isWinner
                         ? "2px solid #facc15"
                         : isTurn
                         ? "2px solid #22c55e"
                         : "1px solid #334155",
-                      borderRadius: 14,
-                      padding: 12,
+                      borderRadius: 16,
+                      padding: 14,
                     }}
                   >
-                    <div style={{ fontWeight: 700 }}>{player.name}</div>
+                    <div style={{ fontWeight: 700, fontSize: 16 }}>{player.name}</div>
                     <div style={{ color: "#94a3b8", marginTop: 4 }}>
                       {player.id === playerId ? "나" : "참가자"}
                     </div>
@@ -737,6 +742,8 @@ export default function PokerRoom({
                               padding: "6px 8px",
                               borderRadius: 8,
                               fontWeight: 700,
+                              minWidth: 32,
+                              textAlign: "center",
                             }}
                           >
                             {card}
@@ -751,26 +758,19 @@ export default function PokerRoom({
 
             <div
               style={{
-                background: "#14532d",
-                borderRadius: 20,
-                padding: 16,
-                border: "2px solid #166534",
+                background: "linear-gradient(180deg, #14532d 0%, #166534 100%)",
+                borderRadius: 24,
+                padding: 20,
+                border: "2px solid #15803d",
+                boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)",
               }}
             >
               <h3 style={{ marginTop: 0 }}>게임 상태</h3>
-              <div style={{ color: "#dcfce7", marginBottom: 8 }}>
-                단계: {game?.stage ?? "-"}
-              </div>
-              <div style={{ color: "#dcfce7", marginBottom: 8 }}>
-                팟: {game?.pot ?? 0}
-              </div>
-              <div style={{ color: "#dcfce7", marginBottom: 8 }}>
-                현재 베팅: {game?.currentBet ?? 0}
-              </div>
-              <div style={{ color: "#dcfce7", marginBottom: 8 }}>
-                액션 완료 수: {game?.acted?.length ?? 0}
-              </div>
-              <div style={{ color: "#dcfce7", marginBottom: 14 }}>
+              <div style={statusRow}>단계: {game?.stage ?? "-"}</div>
+              <div style={statusRow}>팟: {game?.pot ?? 0}</div>
+              <div style={statusRow}>현재 베팅: {game?.currentBet ?? 0}</div>
+              <div style={statusRow}>액션 완료 수: {game?.acted?.length ?? 0}</div>
+              <div style={{ ...statusRow, marginBottom: 14 }}>
                 현재 턴: {players.find((p) => p.id === game?.turn)?.name ?? "-"}
               </div>
 
@@ -825,13 +825,7 @@ export default function PokerRoom({
                   type="number"
                   value={raiseInput}
                   onChange={(e) => setRaiseInput(Number(e.target.value || 0))}
-                  style={{
-                    width: 100,
-                    height: 42,
-                    borderRadius: 12,
-                    border: "1px solid #94a3b8",
-                    padding: "0 10px",
-                  }}
+                  style={{ ...inputStyle, width: 110 }}
                 />
 
                 <button
@@ -847,49 +841,82 @@ export default function PokerRoom({
 
           <aside
             style={{
-              background: "#1e293b",
-              border: "1px solid #334155",
-              borderRadius: 20,
+              background: "rgba(15, 23, 42, 0.88)",
+              border: "1px solid rgba(148, 163, 184, 0.18)",
+              borderRadius: 24,
               padding: 20,
               display: "flex",
               flexDirection: "column",
-              minHeight: 720,
+              height: 760,
+              minHeight: 760,
+              maxHeight: 760,
+              overflow: "hidden",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
             }}
           >
-            <h2 style={{ marginTop: 0 }}>실시간 채팅 / 로그</h2>
+            <h2 style={{ marginTop: 0, marginBottom: 14, flexShrink: 0 }}>
+              실시간 채팅 / 로그
+            </h2>
 
             <div
+              ref={chatScrollRef}
               style={{
                 flex: 1,
+                minHeight: 0,
                 overflowY: "auto",
-                background: "#0f172a",
-                border: "1px solid #334155",
-                borderRadius: 16,
+                background: "#0b1220",
+                border: "1px solid #243244",
+                borderRadius: 18,
                 padding: 12,
                 marginBottom: 12,
+                boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.02)",
               }}
             >
               {messages.length === 0 ? (
                 <div style={{ color: "#94a3b8" }}>아직 메시지가 없습니다.</div>
               ) : (
-                messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    style={{
-                      padding: 10,
-                      borderRadius: 12,
-                      background: msg.sender === "시스템" ? "#1f2937" : "#111827",
-                      marginBottom: 8,
-                    }}
-                  >
-                    <div style={{ fontWeight: 700, marginBottom: 4 }}>{msg.sender}</div>
-                    <div style={{ color: "#d1d5db" }}>{msg.text}</div>
-                  </div>
-                ))
+                messages.map((msg) => {
+                  const isSystem = msg.sender === "시스템";
+
+                  return (
+                    <div
+                      key={msg.id}
+                      style={{
+                        padding: 12,
+                        borderRadius: 14,
+                        background: isSystem ? "#1f2937" : "#111827",
+                        marginBottom: 10,
+                        border: isSystem
+                          ? "1px solid rgba(250, 204, 21, 0.18)"
+                          : "1px solid rgba(148, 163, 184, 0.08)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontWeight: 700,
+                          marginBottom: 6,
+                          color: isSystem ? "#fde68a" : "#f8fafc",
+                        }}
+                      >
+                        {msg.sender}
+                      </div>
+                      <div
+                        style={{
+                          color: "#d1d5db",
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-word",
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        {msg.text}
+                      </div>
+                    </div>
+                  );
+                })
               )}
             </div>
 
-            <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
               <input
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
@@ -897,15 +924,7 @@ export default function PokerRoom({
                   if (e.key === "Enter") sendMessage();
                 }}
                 placeholder="메시지를 입력하세요"
-                style={{
-                  flex: 1,
-                  height: 44,
-                  borderRadius: 12,
-                  border: "1px solid #475569",
-                  background: "#0f172a",
-                  color: "white",
-                  padding: "0 12px",
-                }}
+                style={{ ...inputStyle, flex: 1 }}
               />
               <button
                 onClick={sendMessage}
@@ -921,6 +940,22 @@ export default function PokerRoom({
   );
 }
 
+const inputStyle: React.CSSProperties = {
+  height: 42,
+  borderRadius: 12,
+  border: "1px solid #475569",
+  background: "#0f172a",
+  color: "white",
+  padding: "0 12px",
+  boxSizing: "border-box",
+};
+
+const statusRow: React.CSSProperties = {
+  color: "#dcfce7",
+  marginBottom: 8,
+  fontWeight: 600,
+};
+
 function buttonStyle(background: string, color: string, disabled = false) {
   return {
     height: 42,
@@ -931,5 +966,6 @@ function buttonStyle(background: string, color: string, disabled = false) {
     color,
     fontWeight: 700,
     cursor: disabled ? "not-allowed" : "pointer",
+    boxShadow: disabled ? "none" : "0 4px 12px rgba(0,0,0,0.18)",
   } as const;
 }
