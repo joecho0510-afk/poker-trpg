@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDocs,
   onSnapshot,
@@ -13,6 +14,7 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
+  writeBatch,
 } from "firebase/firestore";
 import { db } from "../lib/firebase";
 
@@ -304,6 +306,7 @@ export default function PokerRoom({
   const [raiseInput, setRaiseInput] = useState(20);
 
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
+  const isLeavingRef = useRef(false);
 
   const playerId = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -397,6 +400,70 @@ export default function PokerRoom({
       createdAt: Date.now(),
       createdServerAt: serverTimestamp(),
     });
+  };
+
+  const removePlayerFromGameState = async (leavingPlayerId: string) => {
+    const gameRef = doc(db, "rooms", roomId, "game", "state");
+    const gameSnapshot = await getDocs(query(collection(db, "rooms", roomId, "players")));
+    void gameSnapshot;
+
+    if (!game) return;
+
+    const nextHands = { ...game.hands };
+    delete nextHands[leavingPlayerId];
+
+    const nextPlayerStates = { ...game.playerStates };
+    delete nextPlayerStates[leavingPlayerId];
+
+    const nextTurnOrder = game.turnOrder.filter((id) => id !== leavingPlayerId);
+    const nextActed = (game.acted ?? []).filter((id) => id !== leavingPlayerId);
+    const nextWinnerIds = (game.winnerIds ?? []).filter((id) => id !== leavingPlayerId);
+
+    const nextTurn =
+      game.turn === leavingPlayerId
+        ? getNextTurn(nextTurnOrder, leavingPlayerId, nextPlayerStates)
+        : game.turn;
+
+    await updateDoc(gameRef, {
+      hands: nextHands,
+      playerStates: nextPlayerStates,
+      turnOrder: nextTurnOrder,
+      acted: nextActed,
+      winnerIds: nextWinnerIds,
+      turn: nextTurn ?? null,
+    });
+  };
+
+  const leaveRoom = async () => {
+    if (!playerId) return;
+    if (isLeavingRef.current) return;
+    isLeavingRef.current = true;
+
+    try {
+      await deleteDoc(doc(db, "rooms", roomId, "players", playerId));
+
+      if (game?.hands?.[playerId] || game?.playerStates?.[playerId]) {
+        await removePlayerFromGameState(playerId);
+      }
+
+      await logSystem(`${name || "플레이어"} 님이 방을 나갔습니다.`);
+      window.location.href = "/";
+    } catch (error) {
+      console.error(error);
+      isLeavingRef.current = false;
+    }
+  };
+
+  const clearChat = async () => {
+    const snapshot = await getDocs(collection(db, "rooms", roomId, "messages"));
+    const batch = writeBatch(db);
+
+    snapshot.docs.forEach((messageDoc) => {
+      batch.delete(messageDoc.ref);
+    });
+
+    await batch.commit();
+    await logSystem("채팅 기록이 삭제되었습니다.");
   };
 
   const startGame = async () => {
@@ -675,6 +742,12 @@ export default function PokerRoom({
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button onClick={startGame} style={buttonStyle("white", "black")}>
               새 게임 시작
+            </button>
+            <button onClick={clearChat} style={buttonStyle("#e2e8f0", "black")}>
+              채팅 비우기
+            </button>
+            <button onClick={leaveRoom} style={buttonStyle("#fecaca", "black")}>
+              방 나가기
             </button>
             <Link
               href="/"
