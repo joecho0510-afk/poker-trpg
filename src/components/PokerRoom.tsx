@@ -29,6 +29,8 @@ type Player = {
   id: string;
   name: string;
   joinedAt: number;
+  lastSeen?: number;
+  isOnline?: boolean;
 };
 
 type PlayerState = {
@@ -302,11 +304,14 @@ export default function PokerRoom({
   const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [activePlayers, setActivePlayers] = useState<Player[]>([]);
   const [game, setGame] = useState<GameState>(null);
   const [raiseInput, setRaiseInput] = useState(20);
 
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
   const isLeavingRef = useRef(false);
+  const heartbeatRef = useRef<number | null>(null);
+  const STALE_MS = 30000;
 
   const playerId = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -328,6 +333,8 @@ export default function PokerRoom({
         id: playerId,
         name: name || "플레이어",
         joinedAt: Date.now(),
+        lastSeen: Date.now(),
+        isOnline: true,
       },
       { merge: true }
     );
@@ -353,6 +360,13 @@ export default function PokerRoom({
     const unsub = onSnapshot(q, (snapshot) => {
       const next = snapshot.docs.map((d) => d.data() as Player);
       setPlayers(next);
+
+      const now = Date.now();
+      setActivePlayers(
+        next.filter(
+          (p) => (p.lastSeen ?? 0) > now - STALE_MS && p.isOnline !== false
+        )
+      );
     });
 
     return () => unsub();
@@ -376,6 +390,69 @@ export default function PokerRoom({
     if (!chatScrollRef.current) return;
     chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
   }, [messages]);
+
+  useEffect(() => {
+    if (!playerId) return;
+
+    const playerRef = doc(db, "rooms", roomId, "players", playerId);
+
+    const sendHeartbeat = () => {
+      setDoc(
+        playerRef,
+        {
+          id: playerId,
+          name: name || "플레이어",
+          lastSeen: Date.now(),
+          isOnline: true,
+        },
+        { merge: true }
+      ).catch(() => {});
+    };
+
+    sendHeartbeat();
+    heartbeatRef.current = window.setInterval(sendHeartbeat, 10000);
+
+    const markOffline = () => {
+      updateDoc(playerRef, {
+        lastSeen: Date.now(),
+        isOnline: false,
+      }).catch(() => {});
+    };
+
+    window.addEventListener("pagehide", markOffline);
+    window.addEventListener("beforeunload", markOffline);
+
+    return () => {
+      if (heartbeatRef.current) {
+        window.clearInterval(heartbeatRef.current);
+      }
+      window.removeEventListener("pagehide", markOffline);
+      window.removeEventListener("beforeunload", markOffline);
+      markOffline();
+    };
+  }, [roomId, playerId, name]);
+
+  useEffect(() => {
+    const cleanup = window.setInterval(async () => {
+      const snapshot = await getDocs(collection(db, "rooms", roomId, "players"));
+      const now = Date.now();
+
+      for (const staleDoc of snapshot.docs) {
+        const data = staleDoc.data() as Player;
+        const lastSeen = data.lastSeen ?? 0;
+
+        if (lastSeen < now - STALE_MS || data.isOnline === false) {
+          await deleteDoc(staleDoc.ref).catch(() => {});
+
+          if (game?.hands?.[staleDoc.id] || game?.playerStates?.[staleDoc.id]) {
+            await removePlayerFromGameState(staleDoc.id).catch(() => {});
+          }
+        }
+      }
+    }, 15000);
+
+    return () => window.clearInterval(cleanup);
+  }, [roomId, game]);
 
   const sendMessage = async () => {
     const text = chatInput.trim();
@@ -526,7 +603,7 @@ export default function PokerRoom({
       });
 
       const winnerName =
-        players.find((p) => p.id === winnerId)?.name ?? "승자";
+        (activePlayers.find((p) => p.id === winnerId) || players.find((p) => p.id === winnerId))?.name ?? "승자";
       await logSystem(`${winnerName} 승리. 팟 ${nextGame.pot} 획득`);
       return true;
     }
@@ -709,7 +786,7 @@ export default function PokerRoom({
     await logSystem(`${name} 폴드`);
   };
 
-  const opponentPlayers = players.filter((p) => p.id !== playerId);
+  const opponentPlayers = activePlayers.filter((p) => p.id !== playerId);
 
   return (
     <main
@@ -890,7 +967,7 @@ export default function PokerRoom({
                   단계: {game?.stage ?? "-"}
                 </div>
                 <div style={{ color: "#cbd5e1" }}>
-                  현재 턴: {players.find((p) => p.id === game?.turn)?.name ?? "-"}
+                  현재 턴: {(activePlayers.find((p) => p.id === game?.turn) || players.find((p) => p.id === game?.turn))?.name ?? "-"}
                 </div>
               </div>
 
