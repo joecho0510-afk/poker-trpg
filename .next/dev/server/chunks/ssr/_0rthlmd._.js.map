@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/D-502/Documents/trpg-poker-room/src/components/Lobby.tsx"],"sourcesContent":["\"use client\";\r\n\r\nexport default function Lobby() {\r\n  return (\r\n    <main className=\"min-h-screen bg-zinc-950 text-zinc-100 p-6 flex items-center justify-center\">\r\n      <div className=\"w-full max-w-xl rounded-3xl border border-zinc-800 bg-zinc-900 p-6 space-y-4\">\r\n        <h1 className=\"text-3xl font-bold\">TRPG Poker Room</h1>\r\n        <p className=\"text-zinc-400\">실시간 채팅 + 세븐 포커 방</p>\r\n      </div>\r\n    </main>\r\n  );\r\n}\r\n"],"names":["Lobby","className"],"mappings":";;;;;AAAA;;AAEe,SAASA;IACtB,qBACE,8OAAC;QAAKC,WAAU;kBACd,cAAA,8OAAC;YAAIA,WAAU;;8BACb,8OAAC;oBAAGA,WAAU;8BAAqB;;;;;;8BACnC,8OAAC;oBAAEA,WAAU;8BAAgB;;;;;;;;;;;;;;;;;AAIrC"}},
+    {"offset": {"line": 49, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/D-502/Documents/trpg-poker-room/node_modules/next/src/server/route-modules/app-page/vendored/ssr/react-jsx-dev-runtime.ts"],"sourcesContent":["module.exports = (\n  require('../../module.compiled') as typeof import('../../module.compiled')\n).vendored['react-ssr']!.ReactJsxDevRuntime\n"],"names":["module","exports","require","vendored","ReactJsxDevRuntime"],"mappings":"AAAAA,OAAOC,OAAO,GACZC,QAAQ,4HACRC,QAAQ,CAAC,YAAY,CAAEC,kBAAkB","ignoreList":[0]}}]
+}
