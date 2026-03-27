@@ -262,6 +262,33 @@ function maskOpponentCards(cards: string[], stage: string) {
   });
 }
 
+function renderCardChip(card: string, index: number) {
+  const isHidden = card === "🂠";
+  const suit = isHidden ? "" : card.slice(-1);
+  const isRed = suit === "♥" || suit === "♦";
+
+  return (
+    <div
+      key={`${card}-${index}`}
+      style={{
+        width: 52,
+        height: 76,
+        borderRadius: 12,
+        background: isHidden ? "#334155" : "white",
+        color: isHidden ? "white" : isRed ? "#dc2626" : "#111827",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontWeight: 800,
+        border: isHidden ? "1px solid #475569" : "1px solid #cbd5e1",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.18)",
+      }}
+    >
+      {card}
+    </div>
+  );
+}
+
 export default function PokerRoom({
   roomId,
   initialName,
@@ -615,24 +642,26 @@ export default function PokerRoom({
     await logSystem(`${name} 폴드`);
   };
 
+  const opponentPlayers = players.filter((p) => p.id !== playerId);
+
   return (
     <main
       style={{
         minHeight: "100vh",
         background:
-          "radial-gradient(circle at top, #1e3a2f 0%, #0f172a 45%, #0b1120 100%)",
+          "radial-gradient(circle at top, #204134 0%, #0f172a 45%, #0b1120 100%)",
         color: "white",
-        padding: 24,
+        padding: 20,
       }}
     >
-      <div style={{ maxWidth: 1320, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1400, margin: "0 auto" }}>
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
             gap: 16,
             alignItems: "center",
-            marginBottom: 24,
+            marginBottom: 20,
             flexWrap: "wrap",
           }}
         >
@@ -647,7 +676,6 @@ export default function PokerRoom({
             <button onClick={startGame} style={buttonStyle("white", "black")}>
               새 게임 시작
             </button>
-
             <Link
               href="/"
               style={{
@@ -667,174 +695,221 @@ export default function PokerRoom({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1.18fr 0.82fr",
+            gridTemplateColumns: "1fr 380px",
             gap: 20,
             alignItems: "stretch",
           }}
         >
           <section
             style={{
-              background: "rgba(15, 23, 42, 0.88)",
-              border: "1px solid rgba(148, 163, 184, 0.18)",
-              borderRadius: 24,
+              minHeight: 820,
+              background: "rgba(15, 23, 42, 0.72)",
+              border: "1px solid rgba(148, 163, 184, 0.16)",
+              borderRadius: 28,
               padding: 20,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+              boxShadow: "0 12px 36px rgba(0,0,0,0.28)",
+              display: "flex",
+              flexDirection: "column",
             }}
           >
-            <h2 style={{ marginTop: 0, marginBottom: 16 }}>플레이어</h2>
-
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", marginBottom: 8, color: "#cbd5e1" }}>
-                내 이름
-              </label>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                style={inputStyle}
-              />
-            </div>
-
-            <div style={{ display: "grid", gap: 12, marginBottom: 20 }}>
-              {players.map((player) => {
-                const state = game?.playerStates?.[player.id];
-                const isTurn = game?.turn === player.id;
-                const isWinner = game?.winnerIds?.includes(player.id);
-
-                return (
-                  <div
-                    key={player.id}
-                    style={{
-                      background: "rgba(15, 23, 42, 0.9)",
-                      border: isWinner
-                        ? "2px solid #facc15"
-                        : isTurn
-                        ? "2px solid #22c55e"
-                        : "1px solid #334155",
-                      borderRadius: 16,
-                      padding: 14,
-                    }}
-                  >
-                    <div style={{ fontWeight: 700, fontSize: 16 }}>{player.name}</div>
-                    <div style={{ color: "#94a3b8", marginTop: 4 }}>
-                      {player.id === playerId ? "나" : "참가자"}
-                    </div>
-                    <div style={{ color: "#94a3b8", marginTop: 4 }}>
-                      칩: {state?.chips ?? "-"}
-                    </div>
-                    <div style={{ color: "#94a3b8", marginTop: 4 }}>
-                      베팅: {state?.bet ?? "-"}
-                    </div>
-                    <div style={{ color: "#94a3b8", marginTop: 4 }}>
-                      상태: {state?.folded ? "폴드" : isWinner ? "승리" : isTurn ? "턴" : "대기"}
-                    </div>
-
-                    {game?.hands?.[player.id] && (
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
-                        {(player.id === playerId
-                          ? game.hands[player.id]
-                          : maskOpponentCards(game.hands[player.id], game.stage)
-                        ).map((card, index) => (
-                          <span
-                            key={`${player.id}-${card}-${index}`}
-                            style={{
-                              background: card === "🂠" ? "#334155" : "white",
-                              color: card === "🂠" ? "white" : "black",
-                              padding: "6px 8px",
-                              borderRadius: 8,
-                              fontWeight: 700,
-                              minWidth: 32,
-                              textAlign: "center",
-                            }}
-                          >
-                            {card}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
             <div
               style={{
-                background: "linear-gradient(180deg, #14532d 0%, #166534 100%)",
-                borderRadius: 24,
-                padding: 20,
-                border: "2px solid #15803d",
-                boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)",
+                position: "relative",
+                flex: 1,
+                minHeight: 760,
+                borderRadius: 32,
+                background:
+                  "radial-gradient(circle at center, #1d8f53 0%, #166534 45%, #14532d 75%, #0f3d24 100%)",
+                border: "10px solid #3f2b1d",
+                boxShadow:
+                  "inset 0 0 0 2px rgba(255,255,255,0.05), inset 0 30px 60px rgba(255,255,255,0.04)",
+                overflow: "hidden",
               }}
             >
-              <h3 style={{ marginTop: 0 }}>게임 상태</h3>
-              <div style={statusRow}>단계: {game?.stage ?? "-"}</div>
-              <div style={statusRow}>팟: {game?.pot ?? 0}</div>
-              <div style={statusRow}>현재 베팅: {game?.currentBet ?? 0}</div>
-              <div style={statusRow}>액션 완료 수: {game?.acted?.length ?? 0}</div>
-              <div style={{ ...statusRow, marginBottom: 14 }}>
-                현재 턴: {players.find((p) => p.id === game?.turn)?.name ?? "-"}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: "6% 10%",
+                  border: "2px solid rgba(255,255,255,0.14)",
+                  borderRadius: "999px",
+                }}
+              />
+
+              <div
+                style={{
+                  position: "absolute",
+                  top: 24,
+                  left: 0,
+                  right: 0,
+                  display: "flex",
+                  justifyContent: "center",
+                  gap: 24,
+                  padding: "0 24px",
+                  flexWrap: "wrap",
+                }}
+              >
+                {opponentPlayers.map((player) => {
+                  const state = game?.playerStates?.[player.id];
+                  const isTurn = game?.turn === player.id;
+                  const isWinner = game?.winnerIds?.includes(player.id);
+                  const cards = game?.hands?.[player.id]
+                    ? maskOpponentCards(game.hands[player.id], game.stage)
+                    : [];
+
+                  return (
+                    <div
+                      key={player.id}
+                      style={{
+                        minWidth: 210,
+                        maxWidth: 260,
+                        background: "rgba(10, 15, 25, 0.78)",
+                        border: isWinner
+                          ? "2px solid #facc15"
+                          : isTurn
+                          ? "2px solid #22c55e"
+                          : "1px solid rgba(148,163,184,0.18)",
+                        borderRadius: 18,
+                        padding: 12,
+                        backdropFilter: "blur(8px)",
+                        boxShadow: "0 10px 24px rgba(0,0,0,0.2)",
+                      }}
+                    >
+                      <div style={{ fontWeight: 800 }}>{player.name}</div>
+                      <div style={{ color: "#94a3b8", marginTop: 4 }}>
+                        칩: {state?.chips ?? "-"} · 베팅: {state?.bet ?? "-"}
+                      </div>
+                      <div style={{ color: "#94a3b8", marginTop: 4 }}>
+                        {state?.folded ? "폴드" : isWinner ? "승리" : isTurn ? "턴" : "대기"}
+                      </div>
+
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
+                        {cards.map((card, index) => renderCardChip(card, index))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
-              {game && myCards.length > 0 && (
-                <div style={{ marginBottom: 16 }}>
-                  <h3 style={{ marginTop: 0 }}>내 카드</h3>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {myCards.map((card, index) => (
-                      <span
-                        key={`${card}-${index}`}
-                        style={{
-                          background: "white",
-                          color: "black",
-                          padding: "8px 10px",
-                          borderRadius: 10,
-                          fontWeight: 700,
-                        }}
-                      >
-                        {card}
-                      </span>
-                    ))}
+              <div
+                style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  width: 280,
+                  background: "rgba(10, 15, 25, 0.78)",
+                  border: "1px solid rgba(148,163,184,0.18)",
+                  borderRadius: 22,
+                  padding: 18,
+                  textAlign: "center",
+                  backdropFilter: "blur(8px)",
+                  boxShadow: "0 14px 28px rgba(0,0,0,0.25)",
+                }}
+              >
+                <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 8 }}>TABLE STATUS</div>
+                <div style={{ fontSize: 28, fontWeight: 900, marginBottom: 8 }}>
+                  팟 {game?.pot ?? 0}
+                </div>
+                <div style={{ color: "#cbd5e1", marginBottom: 6 }}>
+                  현재 베팅: {game?.currentBet ?? 0}
+                </div>
+                <div style={{ color: "#cbd5e1", marginBottom: 6 }}>
+                  단계: {game?.stage ?? "-"}
+                </div>
+                <div style={{ color: "#cbd5e1" }}>
+                  현재 턴: {players.find((p) => p.id === game?.turn)?.name ?? "-"}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  position: "absolute",
+                  left: 24,
+                  right: 24,
+                  bottom: 20,
+                }}
+              >
+                <div
+                  style={{
+                    background: "rgba(10, 15, 25, 0.82)",
+                    border: "2px solid rgba(59,130,246,0.42)",
+                    borderRadius: 22,
+                    padding: 16,
+                    boxShadow: "0 10px 28px rgba(0,0,0,0.24)",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      gap: 14,
+                      flexWrap: "wrap",
+                      marginBottom: 12,
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: 20, fontWeight: 900 }}>
+                        {name}
+                      </div>
+                      <div style={{ color: "#94a3b8", marginTop: 4 }}>
+                        나 · 칩 {myState?.chips ?? "-"} · 베팅 {myState?.bet ?? "-"}
+                      </div>
+                      <div style={{ color: "#94a3b8", marginTop: 4 }}>
+                        상태: {myState?.folded ? "폴드" : isMyTurn ? "턴" : "대기"}
+                      </div>
+                    </div>
+
+                    <div style={{ color: "#cbd5e1" }}>
+                      액션 완료 수: {game?.acted?.length ?? 0}
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+                    {myCards.map((card, index) => renderCardChip(card, index))}
+                  </div>
+
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                    <button
+                      onClick={handleCheck}
+                      disabled={!isMyTurn || !game || game.stage !== "betting"}
+                      style={buttonStyle("#e2e8f0", "black", !isMyTurn || game?.stage !== "betting")}
+                    >
+                      체크
+                    </button>
+
+                    <button
+                      onClick={handleCall}
+                      disabled={!isMyTurn || !game || game.stage !== "betting"}
+                      style={buttonStyle("#e2e8f0", "black", !isMyTurn || game?.stage !== "betting")}
+                    >
+                      콜
+                    </button>
+
+                    <button
+                      onClick={handleFold}
+                      disabled={!isMyTurn || !game || game.stage !== "betting"}
+                      style={buttonStyle("#fecaca", "black", !isMyTurn || game?.stage !== "betting")}
+                    >
+                      폴드
+                    </button>
+
+                    <input
+                      type="number"
+                      value={raiseInput}
+                      onChange={(e) => setRaiseInput(Number(e.target.value || 0))}
+                      style={{ ...inputStyle, width: 110 }}
+                    />
+
+                    <button
+                      onClick={handleRaise}
+                      disabled={!isMyTurn || !game || game.stage !== "betting"}
+                      style={buttonStyle("white", "black", !isMyTurn || game?.stage !== "betting")}
+                    >
+                      레이즈
+                    </button>
                   </div>
                 </div>
-              )}
-
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button
-                  onClick={handleCheck}
-                  disabled={!isMyTurn || !game || game.stage !== "betting"}
-                  style={buttonStyle("#e2e8f0", "black", !isMyTurn || game?.stage !== "betting")}
-                >
-                  체크
-                </button>
-
-                <button
-                  onClick={handleCall}
-                  disabled={!isMyTurn || !game || game.stage !== "betting"}
-                  style={buttonStyle("#e2e8f0", "black", !isMyTurn || game?.stage !== "betting")}
-                >
-                  콜
-                </button>
-
-                <button
-                  onClick={handleFold}
-                  disabled={!isMyTurn || !game || game.stage !== "betting"}
-                  style={buttonStyle("#fecaca", "black", !isMyTurn || game?.stage !== "betting")}
-                >
-                  폴드
-                </button>
-
-                <input
-                  type="number"
-                  value={raiseInput}
-                  onChange={(e) => setRaiseInput(Number(e.target.value || 0))}
-                  style={{ ...inputStyle, width: 110 }}
-                />
-
-                <button
-                  onClick={handleRaise}
-                  disabled={!isMyTurn || !game || game.stage !== "betting"}
-                  style={buttonStyle("white", "black", !isMyTurn || game?.stage !== "betting")}
-                >
-                  레이즈
-                </button>
               </div>
             </div>
           </section>
@@ -847,15 +922,15 @@ export default function PokerRoom({
               padding: 20,
               display: "flex",
               flexDirection: "column",
-              height: 760,
-              minHeight: 760,
-              maxHeight: 760,
+              height: 820,
+              minHeight: 820,
+              maxHeight: 820,
               overflow: "hidden",
-              boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+              boxShadow: "0 12px 36px rgba(0,0,0,0.28)",
             }}
           >
             <h2 style={{ marginTop: 0, marginBottom: 14, flexShrink: 0 }}>
-              실시간 채팅 / 로그
+              채팅 / 로그
             </h2>
 
             <div
@@ -869,7 +944,6 @@ export default function PokerRoom({
                 borderRadius: 18,
                 padding: 12,
                 marginBottom: 12,
-                boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.02)",
               }}
             >
               {messages.length === 0 ? (
@@ -926,10 +1000,7 @@ export default function PokerRoom({
                 placeholder="메시지를 입력하세요"
                 style={{ ...inputStyle, flex: 1 }}
               />
-              <button
-                onClick={sendMessage}
-                style={buttonStyle("white", "black")}
-              >
+              <button onClick={sendMessage} style={buttonStyle("white", "black")}>
                 전송
               </button>
             </div>
@@ -948,12 +1019,6 @@ const inputStyle: React.CSSProperties = {
   color: "white",
   padding: "0 12px",
   boxSizing: "border-box",
-};
-
-const statusRow: React.CSSProperties = {
-  color: "#dcfce7",
-  marginBottom: 8,
-  fontWeight: 600,
 };
 
 function buttonStyle(background: string, color: string, disabled = false) {
