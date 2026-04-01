@@ -53,8 +53,8 @@ export default function RoleplayRoom({
   const [name, setName] = useState(initialName || "플레이어");
   const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [players, setPlayers] = useState<Player[]>([]);
   const [activePlayers, setActivePlayers] = useState<Player[]>([]);
+  const [isMobile, setIsMobile] = useState(false);
 
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
   const heartbeatRef = useRef<number | null>(null);
@@ -64,6 +64,16 @@ export default function RoleplayRoom({
   const playerId = useMemo(() => {
     if (typeof window === "undefined") return "";
     return getPlayerId();
+  }, []);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   useEffect(() => {
@@ -103,9 +113,8 @@ export default function RoleplayRoom({
 
     const unsub = onSnapshot(q, (snapshot) => {
       const next = snapshot.docs.map((d) => d.data() as Player);
-      setPlayers(next);
-
       const now = Date.now();
+
       setActivePlayers(
         next.filter(
           (p) => (p.lastSeen ?? 0) > now - STALE_MS && p.isOnline !== false
@@ -164,7 +173,9 @@ export default function RoleplayRoom({
 
   useEffect(() => {
     const cleanup = window.setInterval(async () => {
-      const snapshot = await getDocs(collection(db, "roleplayRooms", roomId, "players"));
+      const snapshot = await getDocs(
+        collection(db, "roleplayRooms", roomId, "players")
+      );
       const now = Date.now();
 
       for (const staleDoc of snapshot.docs) {
@@ -196,7 +207,9 @@ export default function RoleplayRoom({
   };
 
   const clearChat = async () => {
-    const snapshot = await getDocs(collection(db, "roleplayRooms", roomId, "messages"));
+    const snapshot = await getDocs(
+      collection(db, "roleplayRooms", roomId, "messages")
+    );
     const batch = writeBatch(db);
 
     snapshot.docs.forEach((messageDoc) => {
@@ -221,7 +234,6 @@ export default function RoleplayRoom({
 
     try {
       await deleteDoc(doc(db, "roleplayRooms", roomId, "players", playerId));
-
       window.location.href = "/";
     } catch (error) {
       console.error(error);
@@ -236,7 +248,7 @@ export default function RoleplayRoom({
         background:
           "radial-gradient(circle at top, #312e81 0%, #111827 45%, #0b1120 100%)",
         color: "white",
-        padding: 20,
+        padding: isMobile ? 12 : 20,
       }}
     >
       <div style={{ maxWidth: 1280, margin: "0 auto" }}>
@@ -244,24 +256,40 @@ export default function RoleplayRoom({
           style={{
             display: "flex",
             justifyContent: "space-between",
-            gap: 16,
-            alignItems: "center",
-            marginBottom: 20,
+            gap: 12,
+            alignItems: isMobile ? "stretch" : "center",
+            marginBottom: 16,
             flexWrap: "wrap",
+            flexDirection: isMobile ? "column" : "row",
           }}
         >
           <div>
-            <h1 style={{ margin: 0, fontSize: 34, fontWeight: 800 }}>
+            <h1
+              style={{
+                margin: 0,
+                fontSize: isMobile ? 26 : 34,
+                fontWeight: 800,
+              }}
+            >
               Roleplay Room
             </h1>
-            <p style={{ marginTop: 8, color: "#cbd5e1" }}>roomId: {roomId}</p>
+            <p style={{ marginTop: 8, color: "#cbd5e1", fontSize: isMobile ? 14 : 16 }}>
+              roomId: {roomId}
+            </p>
           </div>
 
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button onClick={clearChat} style={buttonStyle("#e2e8f0", "black")}>
+          <div
+            style={{
+              display: "grid",
+              gap: 8,
+              gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3, auto)",
+              width: isMobile ? "100%" : "auto",
+            }}
+          >
+            <button onClick={clearChat} style={buttonStyle("#e2e8f0", "black", false, true)}>
               채팅 비우기
             </button>
-            <button onClick={leaveRoom} style={buttonStyle("#fecaca", "black")}>
+            <button onClick={leaveRoom} style={buttonStyle("#fecaca", "black", false, true)}>
               방 나가기
             </button>
             <Link
@@ -270,9 +298,15 @@ export default function RoleplayRoom({
                 textDecoration: "none",
                 background: "#334155",
                 color: "white",
-                padding: "10px 14px",
+                padding: "12px 14px",
                 borderRadius: 12,
                 fontWeight: 700,
+                textAlign: "center",
+                minHeight: 46,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gridColumn: isMobile ? "1 / -1" : "auto",
               }}
             >
               로비로
@@ -283,23 +317,25 @@ export default function RoleplayRoom({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "300px 1fr",
-            gap: 20,
+            gridTemplateColumns: isMobile ? "1fr" : "300px 1fr",
+            gap: 16,
           }}
         >
           <section
             style={{
               background: "rgba(15, 23, 42, 0.85)",
               border: "1px solid rgba(148, 163, 184, 0.18)",
-              borderRadius: 24,
-              padding: 20,
+              borderRadius: 20,
+              padding: isMobile ? 16 : 20,
               boxShadow: "0 12px 36px rgba(0,0,0,0.28)",
             }}
           >
-            <h2 style={{ marginTop: 0 }}>참가자</h2>
+            <h2 style={{ marginTop: 0, fontSize: isMobile ? 20 : 24 }}>참가자</h2>
 
             <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", marginBottom: 8 }}>내 이름</label>
+              <label style={{ display: "block", marginBottom: 8, fontSize: 14 }}>
+                내 이름
+              </label>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -307,7 +343,13 @@ export default function RoleplayRoom({
               />
             </div>
 
-            <div style={{ display: "grid", gap: 10 }}>
+            <div
+              style={{
+                display: "grid",
+                gap: 10,
+                gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr",
+              }}
+            >
               {activePlayers.map((player) => (
                 <div
                   key={player.id}
@@ -318,8 +360,10 @@ export default function RoleplayRoom({
                     padding: 12,
                   }}
                 >
-                  <div style={{ fontWeight: 700 }}>{player.name}</div>
-                  <div style={{ color: "#94a3b8", marginTop: 4 }}>
+                  <div style={{ fontWeight: 700, fontSize: isMobile ? 14 : 16 }}>
+                    {player.name}
+                  </div>
+                  <div style={{ color: "#94a3b8", marginTop: 4, fontSize: 13 }}>
                     {player.id === playerId ? "나" : "참가자"}
                   </div>
                 </div>
@@ -331,18 +375,25 @@ export default function RoleplayRoom({
             style={{
               background: "rgba(15, 23, 42, 0.88)",
               border: "1px solid rgba(148, 163, 184, 0.18)",
-              borderRadius: 24,
-              padding: 20,
+              borderRadius: 20,
+              padding: isMobile ? 16 : 20,
               display: "flex",
               flexDirection: "column",
-              height: 820,
-              minHeight: 820,
-              maxHeight: 820,
+              height: isMobile ? "calc(100vh - 320px)" : 820,
+              minHeight: isMobile ? 420 : 820,
+              maxHeight: isMobile ? "calc(100vh - 320px)" : 820,
               overflow: "hidden",
               boxShadow: "0 12px 36px rgba(0,0,0,0.28)",
             }}
           >
-            <h2 style={{ marginTop: 0, marginBottom: 14, flexShrink: 0 }}>
+            <h2
+              style={{
+                marginTop: 0,
+                marginBottom: 14,
+                flexShrink: 0,
+                fontSize: isMobile ? 20 : 24,
+              }}
+            >
               역극 채팅
             </h2>
 
@@ -383,6 +434,7 @@ export default function RoleplayRoom({
                           fontWeight: 700,
                           marginBottom: 6,
                           color: isSystem ? "#fde68a" : "#f8fafc",
+                          fontSize: isMobile ? 14 : 16,
                         }}
                       >
                         {msg.sender}
@@ -393,6 +445,7 @@ export default function RoleplayRoom({
                           whiteSpace: "pre-wrap",
                           wordBreak: "break-word",
                           lineHeight: 1.6,
+                          fontSize: isMobile ? 14 : 15,
                         }}
                       >
                         {msg.text}
@@ -403,7 +456,14 @@ export default function RoleplayRoom({
               )}
             </div>
 
-            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isMobile ? "1fr" : "1fr auto",
+                gap: 8,
+                flexShrink: 0,
+              }}
+            >
               <input
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
@@ -411,9 +471,9 @@ export default function RoleplayRoom({
                   if (e.key === "Enter") sendMessage();
                 }}
                 placeholder="역극 메시지를 입력하세요"
-                style={{ ...inputStyle, flex: 1 }}
+                style={{ ...inputStyle, width: "100%" }}
               />
-              <button onClick={sendMessage} style={buttonStyle("white", "black")}>
+              <button onClick={sendMessage} style={buttonStyle("white", "black", false, true)}>
                 전송
               </button>
             </div>
@@ -425,18 +485,26 @@ export default function RoleplayRoom({
 }
 
 const inputStyle: React.CSSProperties = {
-  height: 42,
+  width: "100%",
+  height: 46,
   borderRadius: 12,
   border: "1px solid #475569",
   background: "#0f172a",
   color: "white",
   padding: "0 12px",
   boxSizing: "border-box",
+  fontSize: 16,
 };
 
-function buttonStyle(background: string, color: string, disabled = false) {
+function buttonStyle(
+  background: string,
+  color: string,
+  disabled = false,
+  fullWidth = false
+) {
   return {
-    height: 42,
+    height: 46,
+    width: fullWidth ? "100%" : "auto",
     padding: "0 16px",
     borderRadius: 12,
     border: "none",
@@ -445,5 +513,6 @@ function buttonStyle(background: string, color: string, disabled = false) {
     fontWeight: 700,
     cursor: disabled ? "not-allowed" : "pointer",
     boxShadow: disabled ? "none" : "0 4px 12px rgba(0,0,0,0.18)",
+    fontSize: 15,
   } as const;
 }
